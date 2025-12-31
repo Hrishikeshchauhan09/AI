@@ -3,10 +3,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from agent import AgentManager
-from memory import MemoryManager
 
 load_dotenv()
+
+from agent import AgentManager
+from memory import MemoryManager
 
 app = FastAPI(title="AI Companion API")
 

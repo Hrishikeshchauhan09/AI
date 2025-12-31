@@ -1,0 +1,15 @@
+# Environment Variables
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+backend/venv/
+
+# Node/Frontend (Frontend has its own gitignore, but adding here is safe)
+node_modules/
+dist/
+.DS_Store
