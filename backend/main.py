@@ -3,11 +3,16 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
 
 from agent import AgentManager
 from memory import MemoryManager
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Companion API")
 
@@ -30,23 +35,35 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "AI Companion Backend is running!"}
+    return {"message": "AI Companion Backend is running!", "status": "healthy"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "AI Companion API"}
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
     try:
-        # 1. Retrieve context from memory (optional enhancement, skipping for basic flow or can be added to prompt)
+        logger.info(f"Received message: {request.message[:50]}...")
+        
+        # Validate input
+        if not request.message or not request.message.strip():
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
+        
+        # 1. Retrieve context from memory (optional enhancement)
         context = await memory_manager.retrieve_context(request.message)
         
-        # 2. Add context to message or system prompt (simplified here, agent handles history)
-        # For now, we trust the agent's memory of the immediate session + vector store if integrated in agent
-        
-        # 3. Get response from Agent
+        # 2. Get response from Agent
         response = await agent_manager.process_message(request.message, request.history)
         
-        # 4. Save interaction to memory
+        # 3. Save interaction to memory
         await memory_manager.add_interaction(request.message, response)
         
+        logger.info(f"Generated response: {response[:50]}...")
         return {"response": response}
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error processing chat: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
